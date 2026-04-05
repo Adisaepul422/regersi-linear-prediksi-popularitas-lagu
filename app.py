@@ -2,33 +2,47 @@ from flask import Flask, render_template, request
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 import numpy as np
+import os
 
 app = Flask(__name__)
 
-# Membangun model saat aplikasi pertama kali dijalankan
+# 🔧 Ambil path folder project (biar Vercel bisa baca file)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# 🧠 Training model
 def train_model():
-    df = pd.read_csv('song_data.csv')
+    csv_path = os.path.join(BASE_DIR, 'song_data.csv')
+    df = pd.read_csv(csv_path)
+
     X = df[['loudness']]
     Y = df['song_popularity']
+
     model = LinearRegression()
     model.fit(X, Y)
     return model
 
+# Load model saat pertama jalan
 model = train_model()
 
+# 🌐 Route utama
 @app.route('/', methods=['GET', 'POST'])
 def index():
     prediction = None
     loudness_input = None
     
     if request.method == 'POST':
-        # Mengambil input dari form manual (Halaman 10 Modul)
-        loudness_input = float(request.form['loudness'])
-        # Melakukan prediksi
-        pred = model.predict(np.array([[loudness_input]]))
-        prediction = round(pred[0], 2)
+        try:
+            loudness_input = float(request.form['loudness'])
+            pred = model.predict(np.array([[loudness_input]]))
+            prediction = round(pred[0], 2)
+        except:
+            prediction = "Input tidak valid"
         
     return render_template('index.html', prediction=prediction, loudness=loudness_input)
 
+# 🔥 WAJIB untuk Vercel
+app = app
+
+# Untuk local run
 if __name__ == '__main__':
     app.run(debug=True)
