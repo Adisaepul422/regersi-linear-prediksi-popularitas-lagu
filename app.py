@@ -6,43 +6,59 @@ import os
 
 app = Flask(__name__)
 
-# 🔧 Ambil path folder project (biar Vercel bisa baca file)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# 🧠 Training model
+model = None  # model global
+
 def train_model():
-    csv_path = os.path.join(BASE_DIR, 'song_data.csv')
-    df = pd.read_csv(csv_path)
+    try:
+        csv_path = os.path.join(BASE_DIR, 'song_data.csv')
+        df = pd.read_csv(csv_path)
 
-    X = df[['loudness']]
-    Y = df['song_popularity']
+        X = df[['loudness']]
+        Y = df['song_popularity']
 
-    model = LinearRegression()
-    model.fit(X, Y)
-    return model
+        model = LinearRegression()
+        model.fit(X, Y)
+        return model
 
-# Load model saat pertama jalan
-model = train_model()
+    except Exception as e:
+        print("ERROR TRAIN MODEL:", e)
+        return None
 
-# 🌐 Route utama
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    global model
+
     prediction = None
-    loudness_input = None
-    
+    error = None
+
+
+    if model is None:
+        model = train_model()
+
     if request.method == 'POST':
         try:
             loudness_input = float(request.form['loudness'])
-            pred = model.predict(np.array([[loudness_input]]))
-            prediction = round(pred[0], 2)
-        except:
-            prediction = "Input tidak valid"
-        
-    return render_template('index.html', prediction=prediction, loudness=loudness_input)
 
-# 🔥 WAJIB untuk Vercel
+            if model is None:
+                error = "Model gagal dimuat"
+            else:
+                pred = model.predict(np.array([[loudness_input]]))
+                prediction = round(pred[0], 2)
+
+        except Exception as e:
+            error = f"Terjadi error: {e}"
+
+    return render_template(
+        'index.html',
+        prediction=prediction,
+        error=error
+    )
+
+
 app = app
 
-# Untuk local run
 if __name__ == '__main__':
     app.run(debug=True)
