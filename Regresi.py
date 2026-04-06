@@ -43,3 +43,4 @@ plt.ylabel("Bahan Baku")
 plt.title("Hasil Prediksi Regresi Linear")
 plt.legend()
 plt.show()
+# Update terakhir untuk tugas
